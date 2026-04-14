@@ -31,7 +31,7 @@ ax.set_aspect(1)
 
 
 initl_conf = (0, 0, np.deg2rad(90))
-final_conf = (2, 2, np.deg2rad(0))
+final_conf = (-2, -2, np.deg2rad(0))
 
 L = 1
 max_turn_angle = 20
@@ -65,9 +65,9 @@ ini_circles = [ini_left, ini_right]
 fin_circles = [fin_left, fin_right]
 
 print(f'{ini_left}, {fin_right}')
-# correct_straight_1, correct_straight_2 = find_straight(ini_circles, fin_circles, initl_conf, final_conf, None)
-# plt.plot(xs, correct_straight_1(xs))
-# plt.plot(xs, correct_straight_2(xs))
+(correct_straight_1, dis_s1), (correct_straight_2, dis_s2) = find_straight(ini_circles, fin_circles, initl_conf, final_conf, None)
+plt.plot(xs, correct_straight_1(xs))
+plt.plot(xs, correct_straight_2(xs))
 
 # ini_closer, fin_closer = find_closer([ini_left, ini_right], [fin_left, fin_right])
 # print(fin_closer)
@@ -85,8 +85,10 @@ print(f'{ini_left}, {fin_right}')
 # print(ini_point)
 # plt.scatter([ini_point[0]], [ini_point[1]], color='red')
 
-correct_diagonal_1, correct_diagonal_2 = find_diagonal(ini_circles, fin_circles, initl_conf, final_conf, None)
+(correct_diagonal_1, dis_d1), (correct_diagonal_2, dis_d2) = find_diagonal(ini_circles, fin_circles, initl_conf, final_conf, None)
 plt.plot(xs, correct_diagonal_1(xs))
 plt.plot(xs, correct_diagonal_2(xs))
+
+print(dis_s1, dis_s2, dis_d1, dis_d2)
 
 plt.show()

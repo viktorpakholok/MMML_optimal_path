@@ -61,67 +61,32 @@ def _circle_distance(circle, line, in_point, out_point):
     return res_angle * radius
 
 
-def _measure_distance(line: Line, ini_circle, fin_circle, initl_conf, final_conf):
+def _measure_distance(line: Line, ini_circle, fin_circle, initl_conf, final_conf, diagonal = False):
 
     min_turn_r = ini_circle.radius
     assert ini_circle.radius == fin_circle.radius
 
     direction = -1 if ini_circle.center[0] > initl_conf[0] else 1
 
-    # gamma = line.angle
     c = np.deg2rad(180) - line.angle
     assert c > 0
     ini_circle_seg_len = c * min_turn_r
-
-    # center_dis = np.sqrt((ini_circle.center[0] - fin_circle.center[0])**2 + (ini_circle.center[1] - fin_circle.center[1])**2)
-    # print(f'center_dis1: {center_dis}')
-    # # alpha = np.arccos(2*min_turn_r / center_dis)
-    # # print(f'{alpha=}')
-    # cathet = np.sqrt(np.square(center_dis)/4  - np.square(min_turn_r))
-    # print(f'{cathet=}')
-    
-
-    # fin_x, fin_y, fin_angle = final_conf
-    # fin_c_x, fin_c_y = fin_circle.center
-
-    # x_offset = fin_x - fin_c_x
-    # y_offset = fin_y - fin_c_y
-
-    # fin_alpha = np.arccos(x_offset / min_turn_r)
-    # # print(f'{fin_alpha=}')
-
-    # out_vec_real = np.array(find_out_point(line))
     out_vec = np.array(find_out_point(line))
     
     out_ini_circle = np.array(out_vec)
-    # print(f'{out_ini_circle=}')
-    # out_ini_circle += 2*cathet * np.array((np.cos(gamma), np.sin(gamma)))
-    # print(f'out1: {out_ini_circle}')
-    # plt.scatter(*out_ini_circle, marker='x', c='purple')
 
     center_half_vec = np.array((fin_circle.center[0] - ini_circle.center[0], fin_circle.center[1] - ini_circle.center[1])) / 2
-    # print(f'{center_half_vec=}')
-    # print(f'center_dis2: {np.sqrt((center_half_vec * 2) @ (center_half_vec * 2))}')
 
     out_vec[0] += direction * min_turn_r
-    # print(f'{out_vec=}')
 
     cathet_vec = center_half_vec - out_vec
     cathet = np.sqrt(cathet_vec @ cathet_vec)
-    # plt.scatter(*(out_vec_real+cathet_vec), marker='x', c='r')
-
-    # print(f'{cathet_vec=}')
-    # print(f'len: {cathet}')
 
     out_ini_circle = np.array(find_out_point(line))
-    # print(f'{out_ini_circle=}')
-    out_ini_circle += 2*center_half_vec #center_vec for diagonal
-    # plt.scatter(*(out_ini_circle), marker='x', c='r')
-    # print(f'out2: {out_ini_circle}')
+    out_ini_circle += 2*(center_half_vec if not diagonal else cathet_vec)
+    plt.scatter(*out_ini_circle, marker='x', c='r')
 
     fin_circle_seg_len = _circle_distance(fin_circle, line, out_ini_circle, final_conf[:2])
-    # print(f'{fin_circle_seg_len=}')
-    # fin_circle_seg_len = _circle_distance(fin_circle, ..., final_conf[:2], ...)
     distance = ini_circle_seg_len + 2*cathet + fin_circle_seg_len
 
     return distance
@@ -184,7 +149,10 @@ def find_straight(ini_circles, fin_circles, initl_conf, final_conf, xs = None):
         plt.plot(xs, straight_tangent(xs), color='y')
         plt.plot(xs, other_straight_tangent(xs), c='y')
 
-    return correct_straight_1, correct_straight_2
+    distance_1 = _measure_distance(correct_straight_1, ini_left, fin_left, initl_conf, final_conf)
+    distance_2 = _measure_distance(correct_straight_2, ini_right, fin_right, initl_conf, final_conf)
+
+    return (correct_straight_1, distance_1), (correct_straight_2, distance_2)
 
 def _find_diagonal(circle_1, circle_2, initl_conf, final_conf):
     min_turn_r = circle_1.radius
@@ -253,5 +221,8 @@ def find_diagonal(ini_circles, fin_circles, initl_conf, final_conf, xs = None):
         plt.plot(xs, diagonal_tangent(xs), c='y')
         plt.plot(xs, other_diagonal_tangent(xs), c='y')
 
-    return correct_diagonal_1, correct_diagonal_2
+    distance_1 = _measure_distance(correct_diagonal_1, ini_left, fin_right, initl_conf, final_conf, True)
+    distance_2 = _measure_distance(correct_diagonal_2, ini_right, fin_left, initl_conf, final_conf, True)
+
+    return (correct_diagonal_1, distance_1), (correct_diagonal_2, distance_2)
 
