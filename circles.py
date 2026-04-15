@@ -31,7 +31,7 @@ ax.set_aspect(1)
 
 
 initl_conf = (0, 0, np.deg2rad(90))
-final_conf = (-2, -2, np.deg2rad(0))
+final_conf = (1, 0, np.deg2rad(0))
 
 L = 1
 max_turn_angle = 20
@@ -90,5 +90,49 @@ plt.plot(xs, correct_diagonal_1(xs))
 plt.plot(xs, correct_diagonal_2(xs))
 
 print(dis_s1, dis_s2, dis_d1, dis_d2)
+
+circle_1, circle_2 = ini_left, fin_left
+radius = circle_1.radius
+assert circle_1.radius == circle_2.radius
+
+dx, dy = circle_2.center[0] - circle_1.center[0], circle_2.center[1] - circle_1.center[1]
+beta = np.arctan(dy/dx)
+print(f'beta: {np.rad2deg(beta)}')
+
+center_vec = np.array((dx, dy))
+center_dis = np.sqrt(center_vec @ center_vec)
+assert center_dis <= 4*radius + 0.0000001, (center_dis, 4*radius)
+
+alpha = np.arccos(center_dis / (4 * radius))
+print(f'alpha: {np.rad2deg(alpha)}')
+
+line = Line(beta, radius, 0)
+plt.plot(xs, line(xs), c='r')
+
+half_center_point = (center_dis / 2) * np.array((np.cos(beta), np.sin(beta)))
+plt.scatter(*(half_center_point + np.array((circle_1.center[0], circle_1.center[1]))), marker='x', c='purple')
+
+orthogonal = np.array((1 / half_center_point[0], -1 / half_center_point[1]))
+orthogonal_line_angle = np.deg2rad(90) + beta
+x_offset = center_dis / (2 * np.cos(beta))
+orthogonal_line = Line(orthogonal_line_angle, radius - x_offset, 0)
+plt.plot(xs, orthogonal_line(xs), c='r')
+
+sum_angle = alpha + beta
+new_center = np.array(circle_1.center) + (2*radius) * np.array((np.cos(sum_angle), np.sin(sum_angle)))
+plt.scatter(*new_center, marker='x', c='purple')
+
+new_circle_1 = plt.Circle(new_center, min_turn_r, fill = False, ec='b')
+ax.add_patch(new_circle_1)
+
+
+alpha_prime = np.deg2rad(180) - (alpha - beta)
+print(f"alpha': {np.rad2deg(alpha_prime)}")
+new_center_2 = np.array(circle_1.center) + (2*radius) * -np.array((np.cos(alpha_prime), np.sin(alpha_prime)))
+plt.scatter(*new_center_2, marker='x', c='purple')
+
+new_circle_2 = plt.Circle(new_center_2, min_turn_r, fill = False, ec='b')
+ax.add_patch(new_circle_2)
+
 
 plt.show()
