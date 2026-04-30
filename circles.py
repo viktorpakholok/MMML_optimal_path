@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from find_lines import find_straight, find_diagonal, find_circular
+from find_lines import find_straight, find_diagonal, find_circular, find_best_dubins
 
 # def find_closer(ini_circles, fin_circles):
 #     # ini_left, ini_right = ini_circles
@@ -73,5 +73,8 @@ plt.plot(xs, correct_diagonal(xs))
 
 points, circle, dis = find_circular(ini_circles, fin_circles, initl_conf, final_conf, None)
 ax.add_patch(circle)
+
+best_trajectory, best_distance = find_best_dubins(ini_circles, fin_circles, initl_conf, final_conf, xs, ax)
+print(f'{best_distance=}')
 
 plt.show()

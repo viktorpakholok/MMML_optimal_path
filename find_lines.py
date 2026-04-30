@@ -512,4 +512,28 @@ def find_circular(ini_circles, fin_circles, initl_conf, final_conf, ax = None):
         return (points1, circle1, dis1)
     else:
         return (points4, circle4, dis4)
+    
+def find_best_dubins(ini_circles, fin_circles, initl_conf, final_conf, xs = None, ax = None):
+    best_straight, dis_straight = find_straight(ini_circles, fin_circles, initl_conf, final_conf, None)
+    best_diagonal, dis_diagonal = find_diagonal(ini_circles, fin_circles, initl_conf, final_conf, None)
 
+    res = find_circular(ini_circles, fin_circles, initl_conf, final_conf, None)
+    if res is not None:
+        _, best_circular, dis_circular = res
+
+    if xs is not None:
+        plt.plot(xs, best_straight(xs), label=str(round(dis_straight, 2)), c='r')
+        plt.plot(xs, best_diagonal(xs), label=str(round(dis_diagonal, 2)), c='orange')
+
+        if ax is not None and res is not None:
+            best_circular.set_label(str(round(dis_circular, 2)))
+            ax.add_patch(best_circular)
+
+        plt.legend()
+
+    trajectories = [(best_straight, dis_straight), (best_diagonal, dis_diagonal)]
+    if res is not None:
+        trajectories.append(res[1:])
+
+    best = min(trajectories, key=lambda x: x[1])
+    return best
