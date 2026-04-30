@@ -118,9 +118,9 @@ ini_circles = [ini_left, ini_right]
 fin_circles = [fin_left, fin_right]
 
 print(f'{ini_left}, {fin_right}')
-(correct_straight_1, dis_s1), (correct_straight_2, dis_s2) = find_straight(ini_circles, fin_circles, initl_conf, final_conf, None)
-plt.plot(xs, correct_straight_1(xs))
-plt.plot(xs, correct_straight_2(xs))
+correct_straight, dis = find_straight(ini_circles, fin_circles, initl_conf, final_conf, None)
+plt.plot(xs, correct_straight(xs))
+print(f'{dis=}')
 
 # ini_closer, fin_closer = find_closer([ini_left, ini_right], [fin_left, fin_right])
 # print(fin_closer)

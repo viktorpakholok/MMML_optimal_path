@@ -3,7 +3,10 @@ import matplotlib.pyplot as plt
 
 class Line():
     def __init__(self, angle, x_offset, y_offset):
-        self.angle = angle
+        if isinstance(angle, (float, int)):
+            self.angle = angle
+        elif len(angle) == 2:
+            self.angle = np.arctan(angle[1] / angle[0])
         self.x_offset = x_offset
         self.y_offset = y_offset
 
@@ -94,67 +97,116 @@ def _measure_distance(line: Line, ini_circle, fin_circle, initl_conf, final_conf
     return distance
 
 
-def _find_straight(circle_1, circle_2, initl_conf):
+def _find_straight(circle_1, circle_2, initl_conf, final_conf, xs = None):
     min_turn_r = circle_1.radius
     assert circle_1.radius == circle_2.radius
 
-    # print(circle_1.center[0])
-    direction = -1 if circle_1.center[0] > initl_conf[0] else 1
+    ini_point = np.array(initl_conf[:2])
+    ini_angle = initl_conf[2]
+    ini_vec = np.array((np.cos(ini_angle), np.sin(ini_angle)))
+    ini_center = np.array(circle_1.center)
+
+    fin_point = np.array(final_conf[:2])
+    fin_angle = final_conf[2]
+    fin_vec = np.array((np.cos(fin_angle), np.sin(fin_angle)))
+    fin_center = np.array(circle_2.center)
 
     dx, dy = circle_2.center[0] - circle_1.center[0], circle_2.center[1] - circle_1.center[1]
-    # print(f'{dx=}, {dy=}')
-    # print(dx/dy)
-    beta = np.arctan(dy/dx)
-    # print(f'beta: {np.rad2deg(beta)}')
+    center_vec = np.array((dx, dy))
+    # center_dis = np.sqrt(center_vec @ center_vec)
+    tan_angle = center_vec[1] / center_vec[0]
 
-    # straight_tangent = np.tan(beta) * (xs + direction*min_turn_r + min_turn_r*np.sin(beta)) + min_turn_r*np.cos(beta)
-    # other_straight_tangent = np.tan(beta) * (xs + direction*min_turn_r - min_turn_r*np.sin(beta)) - min_turn_r*np.cos(beta)
-    straight_tangent = Line(beta, direction*min_turn_r + min_turn_r*np.sin(beta), min_turn_r*np.cos(beta))
-    other_straight_tangent = Line(beta, direction*min_turn_r - min_turn_r*np.sin(beta), -min_turn_r*np.cos(beta))
+    orthogonal_to_ac1 = np.array((1/center_vec[0], -1/center_vec[1]))
+    assert np.isclose(orthogonal_to_ac1 @ center_vec, 0)
+
+    orthogonal_to_ac1 = min_turn_r * orthogonal_to_ac1 / np.sqrt(orthogonal_to_ac1 @ orthogonal_to_ac1)
+    assert np.isclose(orthogonal_to_ac1 @ orthogonal_to_ac1, min_turn_r**2)
+
+    mid_len = np.sqrt(center_vec @ center_vec)
+
+    ini_out_1 = ini_center + orthogonal_to_ac1
+    # print(f'{ini_out_1=}')
+
+    b = ini_out_1[1] - tan_angle*ini_out_1[0]
+    tangent1 = Line(center_vec, 0, b)
+
+    if xs is not None:
+        plt.scatter(*ini_out_1, marker='x', c='red')
+        plt.scatter(*(center_vec + orthogonal_to_ac1 + ini_center), marker='x', c='red')
+
+    out_vec_1, ini_len1 = get_out_vector(circle_1, ini_point, ini_vec, ini_out_1)
+
+    fin_in_1 = fin_center + orthogonal_to_ac1
+
+    out_fin_vec_1, fin_len1 = get_out_vector(circle_2, fin_in_1, center_vec, fin_point)
+    len1 = ini_len1 + mid_len + fin_len1
+    # print(f'{ini_len1=} + {mid_len=} + {fin_len1=}')
+
+    ini_out_2 = ini_center - orthogonal_to_ac1
+    out_vec_2, ini_len2 = get_out_vector(circle_1, ini_point, ini_vec, ini_out_2)
+
+    b = ini_out_2[1] - tan_angle*ini_out_2[0]
+    tangent2 = Line(center_vec, 0, b)
+
+    fin_in_2 = fin_center - orthogonal_to_ac1
+    out_fin_vec_2, fin_len2 = get_out_vector(circle_2, fin_in_2, center_vec, fin_point)
+    len2 = ini_len2 + mid_len + fin_len2
+
+    ini_angle_1 = out_vec_1 @ center_vec / (np.sqrt(out_vec_1@out_vec_1) * np.sqrt(center_vec@center_vec))
+    ini_angle_2 = out_vec_2 @ center_vec / (np.sqrt(out_vec_2@out_vec_2) * np.sqrt(center_vec@center_vec))
+
+    # print(f'{ini_angle_1=} and {ini_angle_2=}')
+
+    if np.isclose(ini_angle_1, 1):
+        assert np.isclose(ini_angle_2, -1)
+        tangent = tangent1
+        len_ = len1
+        out_fin_vec = out_fin_vec_1
+    else:
+        assert np.isclose(ini_angle_1, -1), ini_angle_1
+        assert np.isclose(ini_angle_2, 1)
+        tangent = tangent2
+        len_ = len2
+        out_fin_vec = out_fin_vec_2
+
+    fin_angle_check = out_fin_vec @ fin_vec / (np.sqrt(out_fin_vec@out_fin_vec) * np.sqrt(fin_vec@fin_vec))
+    # print(f'{fin_angle_check=}')
+
+    assert any(np.isclose(fin_angle_check, [-1, 1]))
+    if np.isclose(fin_angle_check, -1):
+        return None
     
-    return straight_tangent, other_straight_tangent
+    return tangent, len_
 
 def find_straight(ini_circles, fin_circles, initl_conf, final_conf, xs = None):
     ini_left, ini_right = ini_circles
     fin_left, fin_right = fin_circles
 
-    ini_left_to_fin = True if initl_conf[0] < final_conf[0] else False
+    corrects = []
 
-    straight_tangent, other_straight_tangent = _find_straight(ini_left, fin_right, initl_conf)
+    res = _find_straight(ini_left, fin_right, initl_conf, final_conf)
+    if res is not None:
+        corrects.append(res)
+
+    res = _find_straight(ini_left, fin_left, initl_conf, final_conf)
+    if res is not None:
+        corrects.append(res)
+
+    res = _find_straight(ini_right, fin_right, initl_conf, final_conf)
+    if res is not None:
+        corrects.append(res)
+
+    res = _find_straight(ini_right, fin_left, initl_conf, final_conf)
+    if res is not None:
+        corrects.append(res)
+
     if xs is not None:
-        plt.plot(xs, straight_tangent(xs), color='r')
-        plt.plot(xs, other_straight_tangent(xs), c='r')
-    # print(straight_tangent(0))
-
-    straight_tangent, other_straight_tangent = _find_straight(ini_left, fin_left, initl_conf)
-    if xs is not None:
-        plt.plot(xs, straight_tangent(xs), color='b')
-        plt.plot(xs, other_straight_tangent(xs), c='b')
-
-    if ini_left_to_fin:
-        correct_straight_1 = other_straight_tangent
-    else:
-        correct_straight_1 = straight_tangent
-
-    straight_tangent, other_straight_tangent = _find_straight(ini_right, fin_right, initl_conf)
-    if xs is not None:
-        plt.plot(xs, straight_tangent(xs), color='g')
-        plt.plot(xs, other_straight_tangent(xs), c='g')
-
-    if ini_left_to_fin:
-        correct_straight_2 = straight_tangent
-    else:
-        correct_straight_2 = other_straight_tangent
-
-    straight_tangent, other_straight_tangent = _find_straight(ini_right, fin_left, initl_conf)
-    if xs is not None:
-        plt.plot(xs, straight_tangent(xs), color='y')
-        plt.plot(xs, other_straight_tangent(xs), c='y')
-
-    distance_1 = _measure_distance(correct_straight_1, ini_left, fin_left, initl_conf, final_conf)
-    distance_2 = _measure_distance(correct_straight_2, ini_right, fin_right, initl_conf, final_conf)
-
-    return (correct_straight_1, distance_1), (correct_straight_2, distance_2)
+        for correct in corrects:
+            tangent, len_ = correct
+            plt.plot(xs, tangent(xs), label=str(round(len_, 2)))
+    
+    best = min(corrects, key=lambda x: x[1])
+    return best
 
 def _find_diagonal(circle_1, circle_2, initl_conf, final_conf):
     min_turn_r = circle_1.radius
