@@ -204,81 +204,144 @@ def find_straight(ini_circles, fin_circles, initl_conf, final_conf, xs = None):
         for correct in corrects:
             tangent, len_ = correct
             plt.plot(xs, tangent(xs), label=str(round(len_, 2)))
+
+        plt.legend()
     
     best = min(corrects, key=lambda x: x[1])
     return best
 
-def _find_diagonal(circle_1, circle_2, initl_conf, final_conf):
+def _find_diagonal(circle_1, circle_2, initl_conf, final_conf, xs = None):
     min_turn_r = circle_1.radius
     assert circle_1.radius == circle_2.radius
 
-    direction = -1 if circle_1.center[0] > initl_conf[0] else 1
-    ini_left_from_fin = 1 if initl_conf[0] < final_conf[0] else -1
+    ini_point = np.array(initl_conf[:2])
+    ini_angle = initl_conf[2]
+    ini_vec = np.array((np.cos(ini_angle), np.sin(ini_angle)))
+    # ini_center = np.array(circle_1.center)
+
+    fin_point = np.array(final_conf[:2])
+    fin_angle = final_conf[2]
+    fin_vec = np.array((np.cos(fin_angle), np.sin(fin_angle)))
+    # fin_center = np.array(circle_2.center)
+
 
     dx, dy = circle_2.center[0] - circle_1.center[0], circle_2.center[1] - circle_1.center[1]
-    beta = np.arctan(dy/dx)
+    center_vec = np.array((dx, dy))
 
-    center_dis = np.sqrt((circle_1.center[0] - circle_2.center[0])**2 + (circle_1.center[1] - circle_2.center[1])**2)
+    center_dis = np.sqrt(center_vec @ center_vec)
+    if center_dis <= 2*min_turn_r: # too close
+        return None 
+
     alpha = np.arccos(min_turn_r / (center_dis / 2))
 
-    gamma = alpha + ini_left_from_fin*beta - np.deg2rad(90)
+    an_dis = min_turn_r * np.cos(alpha)
+    an_vec =  an_dis * center_vec / np.sqrt(center_vec @ center_vec)
+    assert np.isclose(an_vec@an_vec, an_dis**2)
 
-    x_offset = min_turn_r * np.sin(gamma)
-    y_offset = min_turn_r * np.cos(gamma)
+    nb_dis = min_turn_r * np.sin(alpha)
+    nb_vec1 = np.array((1/center_vec[0], -1/center_vec[1]))
+    nb_vec1 = nb_dis * nb_vec1 / np.sqrt(nb_vec1 @ nb_vec1)
+    assert np.isclose(nb_vec1@nb_vec1, nb_dis**2)
 
-    diagonal_tangent = Line(ini_left_from_fin*gamma, direction*min_turn_r + ini_left_from_fin*x_offset, y_offset)
-    # plt.plot(xs, diagonal_tangent, color='y')
+    ab_vec1 = an_vec + nb_vec1
+    bo_vec1 = center_vec / 2 - ab_vec1
 
-    alpha_prime = alpha - ini_left_from_fin*beta
-    # print(f'alpha_prime: {np.rad2deg(alpha_prime)}')
+    ini_out_point1 = circle_1.center + ab_vec1
+    ini_out_vec1, len_ini1 = get_out_vector(circle_1, ini_point, ini_vec, ini_out_point1)
 
-    diag_to_interest = np.deg2rad(90) - (alpha_prime)
-    phi = diag_to_interest
+    fin_in_point1 = ini_out_point1 + 2*bo_vec1
+    fin_out_vec1, len_fin1 = get_out_vector(circle_2, fin_in_point1, bo_vec1, fin_point)
 
-    x_offset = min_turn_r * np.cos(alpha_prime)
-    y_offset = min_turn_r * np.sin(alpha_prime)
+    tan_angle = bo_vec1[1] / bo_vec1[0]
+    b = ini_out_point1[1] - tan_angle*ini_out_point1[0]
 
-    # other_diagonal_tangent = np.tan(phi) * (xs - min_turn_r - y_offset) - x_offset
-    other_diagonal_tangent = Line(ini_left_from_fin*phi, direction*min_turn_r - ini_left_from_fin*x_offset, -y_offset)
-    # plt.plot(xs, other_diagonal_tangent, color='pink')
-    if ini_left_from_fin == -1:     # for mirror effect
-        return other_diagonal_tangent, diagonal_tangent
-    return diagonal_tangent, other_diagonal_tangent
+    tangent1 = Line(bo_vec1, 0, b)
+    len1 = len_ini1 + 2 * np.sqrt(bo_vec1 @ bo_vec1) + len_fin1
+
+    if xs is not None:
+        plt.scatter(*ini_out_point1, marker='x', c='red')
+        plt.scatter(*fin_in_point1, marker='x', c='red')
+        plt.plot(xs, tangent1(xs))
+
+    nb_vec2 = np.array((-1/center_vec[0], 1/center_vec[1]))
+    nb_vec2 = nb_dis * nb_vec2 / np.sqrt(nb_vec2 @ nb_vec2)
+    assert np.isclose(nb_vec2@nb_vec2, nb_dis**2)
+
+    ab_vec2 = an_vec + nb_vec2
+    bo_vec2 = center_vec / 2 - ab_vec2
+
+    ini_out_point2 = circle_1.center + ab_vec2
+    ini_out_vec2, len_ini2 = get_out_vector(circle_1, ini_point, ini_vec, ini_out_point2)
+
+    fin_in_point2 = ini_out_point2 + 2*bo_vec2
+    fin_out_vec2, len_fin2 = get_out_vector(circle_2, fin_in_point2, bo_vec2, fin_point)
+
+    tan_angle = bo_vec2[1] / bo_vec2[0]
+    b = ini_out_point2[1] - tan_angle*ini_out_point2[0]
+
+    tangent2 = Line(bo_vec2, 0, b)
+    len2 = len_ini2 + 2 * np.sqrt(bo_vec2 @ bo_vec2) + len_fin2
+
+    if xs is not None:
+        plt.scatter(*ini_out_point2, marker='x', c='orange')
+        plt.scatter(*fin_in_point2, marker='x', c='orange')
+        plt.plot(xs, tangent2(xs))
+
+    ini_angle1 = (ini_out_vec1 @ bo_vec1) / (np.sqrt(ini_out_vec1 @ ini_out_vec1) * np.sqrt(bo_vec1 @ bo_vec1))
+    ini_angle2 = (ini_out_vec2 @ bo_vec2) / (np.sqrt(ini_out_vec2 @ ini_out_vec2) * np.sqrt(bo_vec2 @ bo_vec2))
+
+    # print(f'{ini_angle1=} and {ini_angle2=}')
+    if np.isclose(ini_angle1, 1):
+        assert np.isclose(ini_angle2, -1)
+
+        tangent = tangent1
+        len_ = len1
+        out_vec = fin_out_vec1
+    else:
+        assert np.isclose(ini_angle1, -1)
+        assert np.isclose(ini_angle2, 1)
+
+        tangent = tangent2
+        len_ = len2
+        out_vec = fin_out_vec2
+
+    angle_check = (out_vec @ fin_vec) / (np.sqrt(out_vec@out_vec) * np.sqrt(fin_vec@fin_vec))
+    if np.isclose(angle_check, -1):
+        return None
+
+    assert np.isclose(angle_check, 1)    
+    return tangent, len_
 
 def find_diagonal(ini_circles, fin_circles, initl_conf, final_conf, xs = None):
     ini_left, ini_right = ini_circles
     fin_left, fin_right = fin_circles
 
-    correct_diagonal_1, correct_diagonal_2 = None, None
+    corrects = []
 
-    diagonal_tangent, other_diagonal_tangent = _find_diagonal(ini_left, fin_left, initl_conf, final_conf)
+    res = _find_diagonal(ini_left, fin_left, initl_conf, final_conf)
+    if res is not None:
+        corrects.append(res)
+
+    res = _find_diagonal(ini_left, fin_right, initl_conf, final_conf)
+    if res is not None:
+        corrects.append(res)
+
+    res = _find_diagonal(ini_right, fin_left, initl_conf, final_conf)
+    if res is not None:
+        corrects.append(res)
+
+    res = _find_diagonal(ini_right, fin_right, initl_conf, final_conf)
+    if res is not None:
+        corrects.append(res)
+
     if xs is not None:
-        plt.plot(xs, diagonal_tangent(xs), c='r')
-        plt.plot(xs, other_diagonal_tangent(xs), c='r')
+        for tangent, len_ in corrects:
+            plt.plot(xs, tangent(xs), label=str(round(len_, 2)))
 
-    diagonal_tangent, other_diagonal_tangent = _find_diagonal(ini_left, fin_right, initl_conf, final_conf)
-    if xs is not None:
-        plt.plot(xs, diagonal_tangent(xs), c='b')
-        plt.plot(xs, other_diagonal_tangent(xs), c='b')
+        plt.legend()
 
-    correct_diagonal_1 = other_diagonal_tangent
-
-    diagonal_tangent, other_diagonal_tangent = _find_diagonal(ini_right, fin_left, initl_conf, final_conf)
-    if xs is not None:
-        plt.plot(xs, diagonal_tangent(xs), c='pink')
-        plt.plot(xs, other_diagonal_tangent(xs), c='pink')
-    
-    correct_diagonal_2 = diagonal_tangent
-
-    diagonal_tangent, other_diagonal_tangent = _find_diagonal(ini_right, fin_right, initl_conf, final_conf)
-    if xs is not None:
-        plt.plot(xs, diagonal_tangent(xs), c='y')
-        plt.plot(xs, other_diagonal_tangent(xs), c='y')
-
-    distance_1 = _measure_distance(correct_diagonal_1, ini_left, fin_right, initl_conf, final_conf, True)
-    distance_2 = _measure_distance(correct_diagonal_2, ini_right, fin_left, initl_conf, final_conf, True)
-
-    return (correct_diagonal_1, distance_1), (correct_diagonal_2, distance_2)
+    best = min(corrects, key=lambda x: x[1])
+    return best
 
 
 # def _find_circular(circle_1, circle_2, xs = None):
@@ -366,6 +429,11 @@ def get_out_vector(circle, in_point, in_vec, out_point):
 
     out_x1 = in_vec_normalized[0]*np.cos(angle_2) + determinant_sqrt
     out_x2 = in_vec_normalized[0]*np.cos(angle_2) - determinant_sqrt
+
+    if out_x1 > 1 and np.isclose(out_x1, 1):
+        out_x1 = np.float64(1)
+    elif out_x1 > 1:
+        assert False  
 
     try_vec_1_1 = np.array([out_x1, np.sqrt(1 - np.square(out_x1))])
     try_vec_1_2 = np.array([out_x1, -np.sqrt(1 - np.square(out_x1))])

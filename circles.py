@@ -137,10 +137,8 @@ print(f'{dis=}')
 # ini_point = (ini_closer.center[0] - min_turn_r*np.sin(beta), ini_closer.center[1] + min_turn_r*np.cos(beta))
 # print(ini_point)
 # plt.scatter([ini_point[0]], [ini_point[1]], color='red')
-
-(correct_diagonal_1, dis_d1), (correct_diagonal_2, dis_d2) = find_diagonal(ini_circles, fin_circles, initl_conf, final_conf, None)
-plt.plot(xs, correct_diagonal_1(xs))
-plt.plot(xs, correct_diagonal_2(xs))
+correct_diagonal, dis_diagonal = find_diagonal(ini_circles, fin_circles, initl_conf, final_conf, None)
+plt.plot(xs, correct_diagonal(xs))
 
 # _find_circular(ini_left, fin_left, initl_conf, final_conf, ax)
 
