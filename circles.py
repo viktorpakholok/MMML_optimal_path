@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from find_lines import find_straight, find_diagonal, Line
+from find_lines import find_straight, find_diagonal, find_circular, Line, _find_circular, _circle_distance
 
 def find_closer(ini_circles, fin_circles):
     # ini_left, ini_right = ini_circles
@@ -23,6 +23,59 @@ def find_closer(ini_circles, fin_circles):
 
     return ini_circles[smallest_idx[0]], fin_circles[smallest_idx[1]]
 
+# def _measure_distance_circular(circle_ini, circle_mid, circle_fin, final_conf):
+#     radius = circle_ini.radius
+#     assert circle_ini.radius == circle_mid.radius == circle_fin.radius
+
+#     is_ini_left_to_fin = circle_ini.center[0] < circle_fin.center[0]
+
+#     dx, dy = circle_fin.center[0] - circle_ini.center[0], circle_fin.center[1] - circle_ini.center[1]
+#     beta = np.arctan(dy/dx)
+#     print(f'beta: {np.rad2deg(beta)}')
+
+#     center_vec = np.array((dx, dy))
+#     center_dis = np.sqrt(center_vec @ center_vec)
+#     assert center_dis <= 4*radius + 0.0000001, (center_dis, 4*radius)
+
+#     # print(f'look: {center_dis / (4 * radius)}')
+
+#     alpha = np.arccos(center_dis / (4 * radius))
+#     print(f'alpha: {np.rad2deg(alpha)}')
+
+#     # if not is_ini_left_to_fin:
+#     #     alpha = np.deg2rad(180) - alpha
+
+#     sum_angle = alpha + beta
+#     print(f"sum_angle: {np.rad2deg(sum_angle)}")
+#     ini_circle_seg_len = sum_angle * radius
+#     print(f'{ini_circle_seg_len=}')
+
+#     print(f'alpha: {np.rad2deg(alpha)}')
+#     mid_circle_seg_len = (np.deg2rad(180) + 2*alpha) * radius
+#     print(f'{mid_circle_seg_len=}')
+
+#     in_angle = np.deg2rad(90) - alpha + beta
+#     # print(f'in_angle: {np.rad2deg(in_angle)}')
+
+#     alpha_2 = alpha - beta
+#     print(f'alpha_2: {np.rad2deg(alpha_2)}')
+#     in_point_direction = np.array((np.cos(alpha_2) * (-1 if circle_mid.center[0] < circle_fin.center[0] else 1), np.sin(alpha_2)))
+#     in_point = np.array(circle_fin.center) + radius * in_point_direction
+#     plt.scatter(*in_point, marker='x', c='orange')
+
+#     # line = Line(in_angle, -in_point[0], in_point[1])
+#     # plt.plot(xs, line(xs), c='orange')
+
+#     # if is_ini_left_to_fin:
+#     #     in_angle = np.deg2rad(180) + in_angle
+#     # print(f'in_angle: {np.rad2deg(in_angle)}')
+#     in_vec = np.array([np.cos(in_angle), np.sin(in_angle)])
+
+#     fin_circle_seg_len = _circle_distance(circle_fin, in_vec, in_point, final_conf[:2])
+#     print(f'{fin_circle_seg_len=}')
+
+#     res = ini_circle_seg_len + mid_circle_seg_len + fin_circle_seg_len
+#     return res
 
 
 fig = plt.gcf()
@@ -89,50 +142,9 @@ plt.plot(xs, correct_straight_2(xs))
 plt.plot(xs, correct_diagonal_1(xs))
 plt.plot(xs, correct_diagonal_2(xs))
 
-print(dis_s1, dis_s2, dis_d1, dis_d2)
+# _find_circular(ini_left, fin_left, initl_conf, final_conf, ax)
 
-circle_1, circle_2 = ini_left, fin_left
-radius = circle_1.radius
-assert circle_1.radius == circle_2.radius
-
-dx, dy = circle_2.center[0] - circle_1.center[0], circle_2.center[1] - circle_1.center[1]
-beta = np.arctan(dy/dx)
-print(f'beta: {np.rad2deg(beta)}')
-
-center_vec = np.array((dx, dy))
-center_dis = np.sqrt(center_vec @ center_vec)
-assert center_dis <= 4*radius + 0.0000001, (center_dis, 4*radius)
-
-alpha = np.arccos(center_dis / (4 * radius))
-print(f'alpha: {np.rad2deg(alpha)}')
-
-line = Line(beta, radius, 0)
-plt.plot(xs, line(xs), c='r')
-
-half_center_point = (center_dis / 2) * np.array((np.cos(beta), np.sin(beta)))
-plt.scatter(*(half_center_point + np.array((circle_1.center[0], circle_1.center[1]))), marker='x', c='purple')
-
-orthogonal = np.array((1 / half_center_point[0], -1 / half_center_point[1]))
-orthogonal_line_angle = np.deg2rad(90) + beta
-x_offset = center_dis / (2 * np.cos(beta))
-orthogonal_line = Line(orthogonal_line_angle, radius - x_offset, 0)
-plt.plot(xs, orthogonal_line(xs), c='r')
-
-sum_angle = alpha + beta
-new_center = np.array(circle_1.center) + (2*radius) * np.array((np.cos(sum_angle), np.sin(sum_angle)))
-plt.scatter(*new_center, marker='x', c='purple')
-
-new_circle_1 = plt.Circle(new_center, min_turn_r, fill = False, ec='b')
-ax.add_patch(new_circle_1)
-
-
-alpha_prime = np.deg2rad(180) - (alpha - beta)
-print(f"alpha': {np.rad2deg(alpha_prime)}")
-new_center_2 = np.array(circle_1.center) + (2*radius) * -np.array((np.cos(alpha_prime), np.sin(alpha_prime)))
-plt.scatter(*new_center_2, marker='x', c='purple')
-
-new_circle_2 = plt.Circle(new_center_2, min_turn_r, fill = False, ec='b')
-ax.add_patch(new_circle_2)
-
+points, circle, dis = find_circular(ini_circles, fin_circles, initl_conf, final_conf, None)
+ax.add_patch(circle)
 
 plt.show()
