@@ -16,86 +16,83 @@ class Line():
         return np.tan(self.angle) * (x + self.x_offset) + self.y_offset
 
 
-
 def find_out_point(line: Line):
     point_x = -line.x_offset #+ abs(min_turn_r*np.sin(angle))
     point_y = line.y_offset  #- min_turn_r*(np.cos(angle) if angle > 0 else np.cos(np.pi - angle))
 
     return point_x, point_y
 
-def _circle_distance(circle, in_vec, in_point, out_point):
-    radius = circle.radius
-    # angle = in_angle
+# def _circle_distance(circle, in_vec, in_point, out_point):
+#     radius = circle.radius
+#     # angle = in_angle
 
-    # in_vec = np.array([np.cos(angle), np.sin(angle)])
+#     # in_vec = np.array([np.cos(angle), np.sin(angle)])
 
-    # print(f'{in_vec=}')
+#     # print(f'{in_vec=}')
 
-    diff_vec = out_point - in_point
-    # print(f'{diff_vec=}')
-    diff_angle = np.arccos((in_vec @ diff_vec) / np.sqrt(diff_vec @ diff_vec))
+#     diff_vec = out_point - in_point
+#     # print(f'{diff_vec=}')
+#     diff_angle = np.arccos((in_vec @ diff_vec) / np.sqrt(diff_vec @ diff_vec))
     
-    # print(f'diff_angle: {np.rad2deg(diff_angle)}')
+#     # print(f'diff_angle: {np.rad2deg(diff_angle)}')
 
-    center_in_vec = np.array((in_point[0] - circle.center[0], in_point[1] - circle.center[1]))
-    center_out_vec = np.array((out_point[0] - circle.center[0], out_point[1] - circle.center[1]))
+#     center_in_vec = np.array((in_point[0] - circle.center[0], in_point[1] - circle.center[1]))
+#     center_out_vec = np.array((out_point[0] - circle.center[0], out_point[1] - circle.center[1]))
 
-    # print(f'{center_in_vec=}')
-    # print(f'{center_out_vec=}')
+#     # print(f'{center_in_vec=}')
+#     # print(f'{center_out_vec=}')
 
-    dot_product = center_in_vec @ center_out_vec
-    # print(f'{dot_product=}')
+#     dot_product = center_in_vec @ center_out_vec
+#     # print(f'{dot_product=}')
 
-    dis_center_in_vec = np.sqrt(center_in_vec @ center_in_vec)
-    dis_center_out_vec = np.sqrt(center_out_vec @ center_out_vec)
+#     dis_center_in_vec = np.sqrt(center_in_vec @ center_in_vec)
+#     dis_center_out_vec = np.sqrt(center_out_vec @ center_out_vec)
 
-    # print(f'{dis_center_in_vec=}')
-    # print(f'{dis_center_out_vec=}')
+#     # print(f'{dis_center_in_vec=}')
+#     # print(f'{dis_center_out_vec=}')
 
-    res_angle = np.arccos(dot_product / (dis_center_in_vec * dis_center_out_vec))
+#     res_angle = np.arccos(dot_product / (dis_center_in_vec * dis_center_out_vec))
 
-    #3596*/+
+#     #3596*/+
 
-    if diff_angle > np.deg2rad(90):
-        res_angle = np.deg2rad(360) - res_angle
+#     if diff_angle > np.deg2rad(90):
+#         res_angle = np.deg2rad(360) - res_angle
 
-    # print(f'res_angle: {np.rad2deg(res_angle)}')
+#     # print(f'res_angle: {np.rad2deg(res_angle)}')
 
-    return res_angle * radius
+#     return res_angle * radius
 
+# def _measure_distance(line: Line, ini_circle, fin_circle, initl_conf, final_conf, diagonal = False):
 
-def _measure_distance(line: Line, ini_circle, fin_circle, initl_conf, final_conf, diagonal = False):
+#     min_turn_r = ini_circle.radius
+#     assert ini_circle.radius == fin_circle.radius
 
-    min_turn_r = ini_circle.radius
-    assert ini_circle.radius == fin_circle.radius
+#     direction = -1 if ini_circle.center[0] > initl_conf[0] else 1
+#     is_ini_left_to_fin = ini_circle.center[0] <= fin_circle.center[0]
 
-    direction = -1 if ini_circle.center[0] > initl_conf[0] else 1
-    is_ini_left_to_fin = ini_circle.center[0] <= fin_circle.center[0]
-
-    c = np.deg2rad(180) - line.angle
-    assert c >= 0, c
-    ini_circle_seg_len = c * min_turn_r
-    out_vec = np.array(find_out_point(line))
+#     c = np.deg2rad(180) - line.angle
+#     assert c >= 0, c
+#     ini_circle_seg_len = c * min_turn_r
+#     out_vec = np.array(find_out_point(line))
     
-    out_ini_circle = np.array(out_vec)
+#     out_ini_circle = np.array(out_vec)
 
-    center_half_vec = np.array((fin_circle.center[0] - ini_circle.center[0], fin_circle.center[1] - ini_circle.center[1])) / 2
+#     center_half_vec = np.array((fin_circle.center[0] - ini_circle.center[0], fin_circle.center[1] - ini_circle.center[1])) / 2
 
-    out_vec[0] += direction * min_turn_r
+#     out_vec[0] += direction * min_turn_r
 
-    cathet_vec = center_half_vec - out_vec
-    cathet = np.sqrt(cathet_vec @ cathet_vec)
+#     cathet_vec = center_half_vec - out_vec
+#     cathet = np.sqrt(cathet_vec @ cathet_vec)
 
-    out_ini_circle = np.array(find_out_point(line))
-    out_ini_circle += 2*(center_half_vec if not diagonal else cathet_vec)
-    plt.scatter(*out_ini_circle, marker='x', c='r')
+#     out_ini_circle = np.array(find_out_point(line))
+#     out_ini_circle += 2*(center_half_vec if not diagonal else cathet_vec)
+#     plt.scatter(*out_ini_circle, marker='x', c='r')
 
-    in_angle = line.angle if is_ini_left_to_fin else np.deg2rad(180) + line.angle
-    fin_circle_seg_len = _circle_distance(fin_circle, in_angle, out_ini_circle, final_conf[:2])
-    distance = ini_circle_seg_len + 2*cathet + fin_circle_seg_len
+#     in_angle = line.angle if is_ini_left_to_fin else np.deg2rad(180) + line.angle
+#     fin_circle_seg_len = _circle_distance(fin_circle, in_angle, out_ini_circle, final_conf[:2])
+#     distance = ini_circle_seg_len + 2*cathet + fin_circle_seg_len
 
-    return distance
-
+#     return distance
 
 def _find_straight(circle_1, circle_2, initl_conf, final_conf, xs = None):
     min_turn_r = circle_1.radius
@@ -342,70 +339,6 @@ def find_diagonal(ini_circles, fin_circles, initl_conf, final_conf, xs = None):
 
     best = min(corrects, key=lambda x: x[1])
     return best
-
-
-# def _find_circular(circle_1, circle_2, xs = None):
-#     radius = circle_1.radius
-#     assert circle_1.radius == circle_2.radius
-
-#     is_1_left_to_2 = circle_1.center[0] < circle_2.center[0]
-
-#     dx, dy = circle_2.center[0] - circle_1.center[0], circle_2.center[1] - circle_1.center[1]
-#     beta = np.arctan(dy/dx)
-#     # print(f'beta: {np.rad2deg(beta)}')
-
-#     center_vec = np.array((dx, dy))
-#     center_dis = np.sqrt(center_vec @ center_vec)
-#     assert center_dis <= 4*radius + 0.0000001, (center_dis, 4*radius)
-
-#     # print(f'look: {center_dis / (4 * radius)}')
-
-#     alpha = np.arccos(center_dis / (4 * radius))
-#     if not is_1_left_to_2:
-#         alpha = np.deg2rad(180) - alpha
-
-#     # print(f'alpha: {np.rad2deg(alpha)}')
-
-#     line = Line(beta, radius * (1 if is_1_left_to_2 else -1), 0)
-    
-#     if xs is not None:
-#         plt.plot(xs, line(xs), c='r')
-
-#     # half_center_point = (center_dis / 2) * np.array((np.cos(beta), np.sin(beta)))
-#     # print(f'{center_vec=}, {center_vec/2=}')
-#     plt.scatter(*(circle_1.center + (center_vec/2)), marker='x', c='purple')
-    
-#     # if xs is not None:
-#     #     plt.scatter(*(half_center_point + np.array((circle_1.center[0], circle_1.center[1]))), marker='x', c='purple')
-
-#     # orthogonal = np.array((1 / half_center_point[0], -1 / half_center_point[1]))
-#     # orthogonal_line_angle = np.deg2rad(90) + beta
-#     # x_offset = center_dis / (2 * np.cos(beta))
-#     # orthogonal_line = Line(orthogonal_line_angle, radius - x_offset, 0)
-    
-#     # if xs is not None:
-#     #     plt.plot(xs, orthogonal_line(xs), c='r')
-
-#     sum_angle = alpha + beta
-#     # print(f'sum_angle: {np.rad2deg(sum_angle)}')
-#     new_center = np.array(circle_1.center) + (2*radius) * np.array((np.cos(sum_angle), np.sin(sum_angle)))
-    
-#     if xs is not None:
-#         plt.scatter(*new_center, marker='x', c='purple')
-
-#     new_circle_1 = plt.Circle(new_center, radius, fill = False, ec='b')
-
-
-#     alpha_prime = np.deg2rad(180) - (alpha - beta)
-#     # print(f"alpha': {np.rad2deg(alpha_prime)}")
-#     new_center_2 = np.array(circle_1.center) + (2*radius) * -np.array((np.cos(alpha_prime), np.sin(alpha_prime)))
-    
-#     if xs is not None:
-#         plt.scatter(*new_center_2, marker='x', c='purple')
-
-#     new_circle_2 = plt.Circle(new_center_2, radius, fill = False, ec='b')
-
-#     return new_circle_1, new_circle_2
 
 def get_out_vector(circle, in_point, in_vec, out_point):
 
