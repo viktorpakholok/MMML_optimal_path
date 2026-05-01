@@ -4,8 +4,26 @@ import matplotlib.pyplot as plt
 from find_lines import Line, get_tangent, get_out_vector, seek_correct_from2
 
 def find_best_rdp(ini_circles, fin_point, initl_conf, xs, ax):
-    ...
 
+    best_straight, best_straight_dis = find_straight(ini_circles, fin_point, initl_conf, None)
+    
+    variants = [(best_straight, best_straight_dis)]
+    res = find_circular(ini_circles, fin_point, initl_conf, None, None)
+    if res is not None:
+        variants.append(res)
+
+    if xs is not None and ax is not None:
+        plt.plot(xs, best_straight(xs), label=str(round(best_straight_dis, 3)), c='pink')
+
+        if res is not None:
+            best_circular, best_circular_dis = res
+            best_circular.set_label(str(round(best_circular_dis, 3)))
+            ax.add_patch(best_circular)
+
+        plt.legend()
+
+    best = min(variants, key=lambda x: x[1])
+    return best
 
 def _find_straight(ini_circle, fin_point, initl_conf, xs = None):
     min_turn_r = ini_circle.radius
@@ -180,7 +198,7 @@ def _find_circular(ini_circle, fin_point, initl_conf, xs = None, ax = None):
     correct = []
     for circle, ao, _ in checks:
         # print(ao @ center_vec, 4*min_turn_r*center_dis*np.cos(alpha))
-        if np.isclose(ao @ center_vec, 2*min_turn_r*center_dis*np.cos(alpha)):
+        if np.isclose(ao @ center_vec, 2*min_turn_r*center_dis*np.cos(alpha)) and not any([(ao_ == ao).all() for circle_, ao_, __ in correct]):
             correct.append((circle, ao, _))
 
     # print(f'{correct=}')
@@ -205,7 +223,7 @@ def _find_circular(ini_circle, fin_point, initl_conf, xs = None, ax = None):
     return best    
     
 
-def find_circular(ini_circles, fin_point, initl_conf, ax = None):
+def find_circular(ini_circles, fin_point, initl_conf, xs = None, ax = None):
     corrects = []
     for ini_circle in ini_circles:
         res = _find_circular(ini_circle, fin_point, initl_conf, None, None)

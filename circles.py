@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from find_lines import find_straight, find_diagonal, find_circular, find_best_dubins
-# from our_rdp import find_straight, find_circular
+from our_rdp import find_best_rdp
 
 # def find_closer(ini_circles, fin_circles):
 #     # ini_left, ini_right = ini_circles
@@ -77,5 +77,9 @@ ax.add_patch(circle)
 
 best_trajectory, best_distance = find_best_dubins(ini_circles, fin_circles, initl_conf, final_conf, xs, ax)
 print(f'{best_distance=}')
+
+fin_point = np.array(final_conf[:2])
+best_rdp_trajectory, best_rdp_distance = find_best_rdp(ini_circles, fin_point, initl_conf, xs, ax)
+print(f'{best_rdp_distance=}')
 
 plt.show()
