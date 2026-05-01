@@ -396,8 +396,23 @@ def get_out_vector(circle, in_point, in_vec, out_point):
     if out_x1 > 1 and np.isclose(out_x1, 1):
         out_x1 = np.float64(1)
     elif out_x1 > 1:
-        assert False  
+        assert False
+    elif out_x1 < -1 and np.isclose(out_x1, -1):
+        out_x1 = -1
+    elif out_x1 < -1:
+        assert False
 
+    # print(f'look1: {out_x2}')
+    if out_x2 > 1 and np.isclose(out_x2, 1):
+        out_x2 = np.float64(1)
+    elif out_x2 > 1:
+        assert False
+    elif out_x2 < -1 and np.isclose(out_x2, -1):
+        out_x2 = -1
+    elif out_x2 < -1:
+        assert False
+
+    # print(f'look2: {1 - np.square(out_x2)}')
     try_vec_1_1 = np.array([out_x1, np.sqrt(1 - np.square(out_x1))])
     try_vec_1_2 = np.array([out_x1, -np.sqrt(1 - np.square(out_x1))])
     try_vec_2_1 = np.array([out_x2, np.sqrt(1 - np.square(out_x2))])
@@ -448,6 +463,10 @@ def _find_circular(circle_ini, circle_fin, initl_conf, final_conf, ax = None):
 
     dx, dy = circle_fin.center[0] - circle_ini.center[0], circle_fin.center[1] - circle_ini.center[1]
     center_vec = np.array((dx, dy))
+
+    center_dis = np.sqrt(center_vec @ center_vec)
+    if center_dis > 4*radius:
+        return None
 
     center_point = circle_ini.center + center_vec / 2
     # plt.scatter(*center_point, color='r')
@@ -527,21 +546,25 @@ def find_circular(ini_circles, fin_circles, initl_conf, final_conf, ax = None):
     ini_left, ini_right = ini_circles
     fin_left, fin_right = fin_circles
 
-    points1, circle1, dis1 = _find_circular(ini_left, fin_left, initl_conf, final_conf)
-    points2, circle2, dis2 = _find_circular(ini_left, fin_right, initl_conf, final_conf)
-    points3, circle3, dis3 = _find_circular(ini_right, fin_left, initl_conf, final_conf)
-    points4, circle4, dis4 = _find_circular(ini_right, fin_right, initl_conf, final_conf)
+    corrects = []
+    res = _find_circular(ini_left, fin_left, initl_conf, final_conf)
+    if res is not None:
+        corrects.append(res)
+    # points2, circle2, dis2 = _find_circular(ini_left, fin_right, initl_conf, final_conf)
+    # points3, circle3, dis3 = _find_circular(ini_right, fin_left, initl_conf, final_conf)
+    res = _find_circular(ini_right, fin_right, initl_conf, final_conf)
+    if res is not None:
+        corrects.append(res)
 
     if ax is not None:
-        ax.add_patch(circle1)
-        ax.add_patch(circle2)
-        ax.add_patch(circle3)
-        ax.add_patch(circle4)
+        for _, circle, _ in corrects:
+            ax.add_patch(circle)
 
-    if dis1 < dis4:
-        return (points1, circle1, dis1)
-    else:
-        return (points4, circle4, dis4)
+    if len(corrects) == 0:
+        return None
+
+    best = min(corrects, key=lambda x: x[2])
+    return best
     
 def find_best_dubins(ini_circles, fin_circles, initl_conf, final_conf, xs = None, ax = None):
     best_straight, dis_straight = find_straight(ini_circles, fin_circles, initl_conf, final_conf, None)

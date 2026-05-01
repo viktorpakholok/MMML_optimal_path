@@ -238,5 +238,8 @@ def find_circular(ini_circles, fin_point, initl_conf, xs = None, ax = None):
 
         plt.legend()
 
+    if len(corrects) == 0:
+        return None
+
     best = min(corrects, key= lambda x: x[1])
     return best
