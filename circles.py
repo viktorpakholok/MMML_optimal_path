@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from find_lines import find_straight, find_diagonal, find_circular, find_best_dubins
+# from our_rdp import find_straight, find_circular
 
 # def find_closer(ini_circles, fin_circles):
 #     # ini_left, ini_right = ini_circles

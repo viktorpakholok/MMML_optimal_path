@@ -16,11 +16,34 @@ class Line():
         return np.tan(self.angle) * (x + self.x_offset) + self.y_offset
 
 
+def get_tangent(dir_vec, point):
+    tan_angle = dir_vec[1] / dir_vec[0]
+    b = point[1] - tan_angle*point[0]
+
+    return Line(dir_vec, 0, b)
+
 def find_out_point(line: Line):
     point_x = -line.x_offset #+ abs(min_turn_r*np.sin(angle))
     point_y = line.y_offset  #- min_turn_r*(np.cos(angle) if angle > 0 else np.cos(np.pi - angle))
 
     return point_x, point_y
+
+# def dis_from_vec(vec):
+#     return np.sqrt(vec @ vec)
+
+def seek_correct_from2(out_dirs, correct_dirs):
+    correct = []
+
+    for idx, out_dir in enumerate(out_dirs):
+        correct_dir = correct_dirs[idx]
+        angle = (correct_dir @ out_dir) / (np.sqrt(correct_dir @ correct_dir) * np.sqrt(out_dir @ out_dir))
+        if np.isclose(angle, 1):
+            correct.append(idx)
+        else:
+            assert np.isclose(angle, -1)
+
+    assert len(correct) == 1
+    return correct[0]
 
 # def _circle_distance(circle, in_vec, in_point, out_point):
 #     radius = circle.radius
@@ -344,7 +367,14 @@ def get_out_vector(circle, in_point, in_vec, out_point):
 
     center_out_vec = out_point - circle.center
     dot_prod_1 = in_vec @ center_out_vec
-    angle_1 = np.arccos((dot_prod_1 / np.sqrt(in_vec @ in_vec)) / np.sqrt(center_out_vec @ center_out_vec))
+
+    to_arc_cos = (dot_prod_1 / np.sqrt(in_vec @ in_vec)) / np.sqrt(center_out_vec @ center_out_vec)
+    if to_arc_cos < -1 and np.isclose(to_arc_cos, -1):
+        to_arc_cos = -1
+    elif to_arc_cos > 1 and np.isclose(to_arc_cos, 1):
+        to_arc_cos = 1
+
+    angle_1 = np.arccos(to_arc_cos)
     center_in_vec = in_point - circle.center
     
     dot_prod_2 = center_out_vec @ center_in_vec
